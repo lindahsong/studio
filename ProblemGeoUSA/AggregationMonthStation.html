@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script type="text/javascript" src="../libs/jquery-1.11.0.min.js"></script>
+<script src="../libs/FileSaver.js"></script>
+
+<div id="vis"></div>
+
+
+<script>
+
+    d3.json("../data/allData2003_2004.json",function(error,data){
+        // console.log(data);
+        var allDates = [];
+        var timeParser = d3.time.format("%b %-d, %Y %X %p");
+        var reducedDataSet = {};
+        var IDsum = {};
+        var temp = {};
+
+        for (ID in data) {    
+            data[ID].forEach( function(d) {
+                var date = d["date"];
+                date = timeParser.parse(date);
+
+                // indexed to 0
+                var month = date.getMonth();
+                // indexed to 1
+                var hour = date.getHours();
+                var value = d["value"];
+
+                var valueList = temp[hour]; 
+
+                if (valueList==undefined)
+                    valueList = []; 
+
+                valueList.push(value); 
+                temp[hour] = valueList;
+            });
+
+            valueList = [];
+
+            $.each(temp, function(hr, array) {
+                allDates[hr] = sum(temp[hr]);
+            });
+
+            IDsum[ID] = sum(allDates);
+
+            reducedDataSet[ID] = {
+                "sum": IDsum[ID],
+                "hourly": allDates
+            }
+
+            allDates = [];
+            temp = [];
+        }
+
+        saveToFile(reducedDataSet,"reducedMonthStationHour2003_2004.json");
+
+    });
+
+    var sum = function(obj) {
+        var sum = 0;
+        for (var val in obj) {
+            if( obj.hasOwnProperty( val ) ) {
+              sum += parseFloat( obj[val] );
+            } 
+        }
+      return sum;
+    };
+
+
+    var saveToFile = function(object, filename){
+        var blob, blobText;
+        blobText = [JSON.stringify(object)];
+        blob = new Blob(blobText, {
+            type: "text/plain;charset=utf-8"
+        });
+        saveAs(blob, filename);
+    }
+
+
+</script>
+
+
+</body>
+</html>
